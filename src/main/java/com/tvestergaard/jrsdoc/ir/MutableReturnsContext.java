@@ -27,7 +27,7 @@ public class MutableReturnsContext implements ReturnsContext
         this.description = description;
     }
 
-    @Override public StructureReference getStructureReference()
+    @Override public StructureReference getType()
     {
         return structureReference;
     }
