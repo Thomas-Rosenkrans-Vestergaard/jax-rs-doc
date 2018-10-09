@@ -1,4 +1,4 @@
-package com.tvestergaard.jrsdoc;
+package com.tvestergaard.jrsdoc.testdata;
 
 public class EntityA
 {

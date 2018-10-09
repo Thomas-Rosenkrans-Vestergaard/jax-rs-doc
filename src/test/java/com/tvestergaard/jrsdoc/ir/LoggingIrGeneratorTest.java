@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.tvestergaard.jrsdoc.PrintStreamProgressWriter;
 import com.tvestergaard.jrsdoc.ProgressWriter;
-import com.tvestergaard.jrsdoc.ResourceA;
+import com.tvestergaard.jrsdoc.testdata.ResourceA;
 import org.junit.Test;
 
 import java.util.Arrays;
