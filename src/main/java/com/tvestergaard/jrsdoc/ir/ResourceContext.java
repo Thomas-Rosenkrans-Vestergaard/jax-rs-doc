@@ -1,4 +1,6 @@
-package com.tvestergaard.jrsdoc.parsing;
+package com.tvestergaard.jrsdoc.ir;
+
+import com.tvestergaard.jrsdoc.ir.EndpointContext;
 
 import java.util.List;
 

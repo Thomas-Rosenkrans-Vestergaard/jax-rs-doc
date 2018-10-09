@@ -1,4 +1,4 @@
-package com.tvestergaard.jrsdoc.parsing;
+package com.tvestergaard.jrsdoc.ir;
 
 import java.util.ArrayList;
 import java.util.List;

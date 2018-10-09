@@ -1,6 +1,5 @@
-package com.tvestergaard.jrsdoc.parsing;
+package com.tvestergaard.jrsdoc.ir;
 
-import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
 import java.util.List;
 

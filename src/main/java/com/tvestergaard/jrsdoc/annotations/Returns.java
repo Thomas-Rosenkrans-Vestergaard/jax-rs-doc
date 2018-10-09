@@ -1,7 +1,5 @@
 package com.tvestergaard.jrsdoc.annotations;
 
-import com.tvestergaard.jrsdoc.parsing.EndpointContext;
-
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
@@ -13,7 +11,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 public @interface Returns
 {
 
-    Class val() default Object.class;
+    Class value() default Object.class;
 
     Class key() default Object.class;
 

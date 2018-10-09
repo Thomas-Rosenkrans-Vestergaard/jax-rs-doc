@@ -1,61 +1,40 @@
-package com.tvestergaard.jrsdoc.parsing;
+package com.tvestergaard.jrsdoc.ir;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.tvestergaard.jrsdoc.ProgressWriter;
 import com.tvestergaard.jrsdoc.annotations.Description;
 import com.tvestergaard.jrsdoc.annotations.Name;
 import com.tvestergaard.jrsdoc.annotations.Params;
 import com.tvestergaard.jrsdoc.annotations.Returns;
-import com.tvestergaard.jrsdoc.out.ProgressWriter;
 
 import javax.ws.rs.*;
-import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Method;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class DirectorySourceCodeParser implements SourceCodeParser
+public class LoggingIrGenerator implements IrGenerator
 {
 
-    private final File           directory;
-    private final String         packagePrefix;
-    private final ProgressWriter writer;
+    private final ProgressWriter progress;
 
-    public DirectorySourceCodeParser(File directory, String packagePrefix, ProgressWriter writer)
+    public LoggingIrGenerator(ProgressWriter progressWriter)
     {
-        this.directory = directory;
-        this.packagePrefix = packagePrefix;
-        this.writer = writer;
+        this.progress = progressWriter;
     }
 
-    @Override public SourceCode parse() throws ParsingException
+    @Override public List<ResourceContext> from(List<Class> classes)
     {
-        try {
+        List<ResourceContext> resources = new ArrayList<>();
 
-            ClassLoader           classLoader = createClassLoader(directory);
-            List<Class>           classes     = findClasses(directory, classLoader, packagePrefix);
-            List<ResourceContext> resources   = new ArrayList<>();
-
-            for (Class c : classes) {
-                if (c.getAnnotation(Path.class) != null) {
-                    writer.notice("Found resource %s.", c.getName());
-                    resources.add(createResource(c));
-                }
+        for (Class c : classes) {
+            if (c.getAnnotation(Path.class) != null) {
+                progress.info("Found resource %s.", c.getName());
+                resources.add(createResource(c));
             }
-
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            System.out.println(gson.toJson(resources));
-
-        } catch (ClassNotFoundException | IOException e) {
-            throw new ParsingException("Could not load target directory", e);
         }
 
-        return null;
+        return resources;
     }
 
     /**
@@ -99,7 +78,7 @@ public class DirectorySourceCodeParser implements SourceCodeParser
     {
         Description annotation = (Description) c.getAnnotation(Description.class);
         if (annotation == null) {
-            writer.warning("No @Description in class %s.", c.getName());
+            progress.warning("No @Description in class %s.", c.getName());
             return null;
         }
 
@@ -110,7 +89,7 @@ public class DirectorySourceCodeParser implements SourceCodeParser
     {
         Description annotation = (Description) m.getAnnotation(Description.class);
         if (annotation == null) {
-            writer.warning("No @Description on method %s in class %s.", m.getName(), c.getName());
+            progress.warning("No @Description on method %s in class %s.", m.getName(), c.getName());
             return null;
         }
 
@@ -154,9 +133,9 @@ public class DirectorySourceCodeParser implements SourceCodeParser
 
         String[] values = produces.value();
         if (values.length < 1)
-            writer.error("No MIME types on @Produces on method %s in class %s.", m.getName(), c.getName());
+            progress.error("No MIME types on @Produces on method %s in class %s.", m.getName(), c.getName());
         if (values.length > 1)
-            writer.warning("Two or more MIME types on @Produces on method %s in class %s.", m.getName(), c.getName());
+            progress.warning("Two or more MIME types on @Produces on method %s in class %s.", m.getName(), c.getName());
 
         return produces.value()[0];
     }
@@ -169,9 +148,9 @@ public class DirectorySourceCodeParser implements SourceCodeParser
 
         String[] values = produces.value();
         if (values.length < 1)
-            writer.error("No MIME types on @Consumes on method %s in class %s.", m.getName(), c.getName());
+            progress.error("No MIME types on @Consumes on method %s in class %s.", m.getName(), c.getName());
         if (values.length > 1)
-            writer.warning("Two or more MIME types on @Consumes on method %s in class %s.", m.getName(), c.getName());
+            progress.warning("Two or more MIME types on @Consumes on method %s in class %s.", m.getName(), c.getName());
 
         return produces.value()[0];
     }
@@ -193,7 +172,7 @@ public class DirectorySourceCodeParser implements SourceCodeParser
     {
         Returns annotation = (Returns) m.getAnnotation(Returns.class);
         if (annotation == null) {
-            writer.warning(
+            progress.warning(
                     "No @Returns on method %s in class %s.",
                     m.getName(),
                     c.getName());
@@ -202,33 +181,33 @@ public class DirectorySourceCodeParser implements SourceCodeParser
 
         String description = annotation.description();
         if (description.isEmpty())
-            writer.warning("Empty description in @Returns on method %s in class %s.", m.getName(), c.getName());
+            progress.warning("Empty description in @Returns on method %s in class %s.", m.getName(), c.getName());
 
         return new MutableReturnsContext(getType(annotation, c, m), description);
     }
 
-    private Type getType(Returns annotation, Class c, Method m)
+    private StructureReference getType(Returns annotation, Class c, Method m)
     {
         Class key  = annotation.key();
-        Class val  = annotation.val();
-        Class list = annotation.val();
+        Class val  = annotation.value();
+        Class list = annotation.list();
 
         // The return type is a list
         if (!list.equals(Object.class)) {
 
             // Notify user of unused attribute key
             if (!key.equals(Object.class)) {
-                writer.warning("Unused attribute 'key' on @Returns on method %s in class %s.", m.getName(), c.getName());
-                writer.notice("The @Return value of method %s in class %s was inferred as list.", m.getName(), c.getName());
+                progress.warning("Unused attribute 'key' on @Returns on method %s in class %s.", m.getName(), c.getName());
+                progress.info("The @Return value of method %s in class %s was inferred as list.", m.getName(), c.getName());
             }
 
             // Notify user of unused attribute val
             if (!val.equals(Object.class)) {
-                writer.warning("Unused attribute 'val' on @Returns on method %s in class %s.", m.getName(), c.getName());
-                writer.notice("The @Return value of method %s in class %s was inferred as list.", m.getName(), c.getName());
+                progress.warning("Unused attribute 'val' on @Returns on method %s in class %s.", m.getName(), c.getName());
+                progress.info("The @Return value of method %s in class %s was inferred as list.", m.getName(), c.getName());
             }
 
-            return Type.listOf(list);
+            return StructureReference.listOf(list);
         }
 
         // The returns type is a map
@@ -236,19 +215,19 @@ public class DirectorySourceCodeParser implements SourceCodeParser
 
             // Notify user of missing attribute val
             if (val.equals(Object.class)) {
-                writer.warning("No attribute val on @Returns on method %s in class %s.", m.getName(), c.getName());
+                progress.warning("No attribute val on @Returns on method %s in class %s.", m.getName(), c.getName());
             }
 
-            return Type.mapOf(key, val);
+            return StructureReference.mapOf(key, val);
         }
 
         // The return type is a unit
         if (!val.equals(Object.class)) {
-            return Type.unitOf(val);
+            return StructureReference.unitOf(val);
         }
 
-        writer.warning("No attribute val on @Returns on method %s in class %s.", m.getName(), c.getName());
-        return Type.unitOf(null);
+        progress.warning("No attribute val on @Returns on method %s in class %s.", m.getName(), c.getName());
+        return StructureReference.unitOf(null);
     }
 
 
@@ -286,75 +265,5 @@ public class DirectorySourceCodeParser implements SourceCodeParser
             return resourceContext.getPath();
 
         return String.format("%s/%s", resourceContext.getPath(), annotation.value());
-    }
-
-    private static ClassLoader createClassLoader(File directory)
-            throws ClassNotFoundException, IOException, ParsingException
-    {
-        URL   url  = directory.toURI().toURL();
-        URL[] urls = new URL[]{url};
-
-        return new URLClassLoader(urls);
-    }
-
-    /**
-     * Returns all the classes from the .class files in the provided source directory, with the provided package
-     * prefix, or any subpackages. The classes are loaded using the provided class loader.
-     *
-     * @param directory     The directory to search for class files in.
-     * @param classLoader   The class loader used to load the found classes.
-     * @param packagePrefix The package search criteria. For a class to be returned, they must have this package prefix.
-     * @return The found classes.
-     * @throws ParsingException When an exception occurs.
-     */
-    private List<Class> findClasses(File directory, ClassLoader classLoader, String packagePrefix) throws
-                                                                                                   ParsingException
-    {
-        List<Class> result = new ArrayList<>();
-        findClasses(directory, classLoader, packagePrefix, result, "");
-        return result;
-    }
-
-    private void findClasses(File directory,
-                             ClassLoader classLoader,
-                             String packagePrefix,
-                             List<Class> result,
-                             String currentPackage)
-            throws ParsingException
-    {
-        if (!packagePrefix.startsWith(currentPackage) && !currentPackage.startsWith(packagePrefix) && !packagePrefix.equals(currentPackage))
-            return;
-
-        if (!directory.exists())
-            throw new ParsingException("The provided source direction does not exist.");
-
-        try {
-            File[] files = directory.listFiles();
-            for (File file : files) {
-
-                String fileName = file.getName();
-
-                if (file.isDirectory()) {
-                    if (file.getName().contains("."))
-                        throw new ParsingException("Directories cannot contain periods.");
-                    String nextPackage = (currentPackage.isEmpty() ? "" : currentPackage + ".") + fileName;
-                    findClasses(file, classLoader, packagePrefix, result, nextPackage);
-                }
-
-                if (file.getName().endsWith(".class")) {
-                    Class loaded = classLoader.loadClass(currentPackage + '.' + removeClassSuffix(fileName));
-                    if (loaded != null)
-                        result.add(loaded);
-                }
-            }
-        } catch (Exception e) {
-            throw new ParsingException("Could not locate class.", e);
-        }
-    }
-
-    @Produces
-    private String removeClassSuffix(String fileName)
-    {
-        return fileName.substring(0, fileName.length() - 6);
     }
 }
