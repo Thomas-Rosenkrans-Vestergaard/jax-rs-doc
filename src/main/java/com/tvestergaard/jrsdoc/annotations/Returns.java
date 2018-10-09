@@ -13,11 +13,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 public @interface Returns
 {
 
-    /**
-     * The structure being returned from some endpoint.
-     *
-     * @see EndpointContext
-     */
     Class val() default Object.class;
 
     Class key() default Object.class;
