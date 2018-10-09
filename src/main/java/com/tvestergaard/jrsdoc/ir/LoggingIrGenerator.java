@@ -1,10 +1,7 @@
 package com.tvestergaard.jrsdoc.ir;
 
 import com.tvestergaard.jrsdoc.ProgressWriter;
-import com.tvestergaard.jrsdoc.annotations.Description;
-import com.tvestergaard.jrsdoc.annotations.Name;
-import com.tvestergaard.jrsdoc.annotations.Params;
-import com.tvestergaard.jrsdoc.annotations.Returns;
+import com.tvestergaard.jrsdoc.annotations.*;
 
 import javax.ws.rs.*;
 import java.lang.reflect.Method;
@@ -157,15 +154,24 @@ public class LoggingIrGenerator implements IrGenerator
 
     private List<ParameterContext> getParameters(Method method)
     {
-        Params annotation = (Params) method.getAnnotation(Params.class);
+        Param  annotationParam  = (Param) method.getAnnotation(Param.class);
+        Params annotationParams = (Params) method.getAnnotation(Params.class);
 
-        if (annotation == null)
-            return new ArrayList<>();
 
-        return Arrays.asList(annotation.value())
-                     .stream()
-                     .map(param -> new MutableParameterContext(param.value()))
-                     .collect(Collectors.toList());
+        if (annotationParam != null) {
+            List<ParameterContext> parameters = new ArrayList<>();
+            parameters.add(new MutableParameterContext(annotationParam.value()));
+            return parameters;
+        }
+
+        if (annotationParams != null) {
+            return Arrays.asList(annotationParams.value())
+                         .stream()
+                         .map(param -> new MutableParameterContext(param.value()))
+                         .collect(Collectors.toList());
+        }
+
+        return new ArrayList<>();
     }
 
     private ReturnsContext getReturnValue(Class c, Method m)
