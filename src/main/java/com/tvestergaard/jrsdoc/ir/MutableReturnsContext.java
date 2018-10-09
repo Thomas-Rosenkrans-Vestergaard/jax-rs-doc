@@ -3,7 +3,7 @@ package com.tvestergaard.jrsdoc.ir;
 public class MutableReturnsContext implements ReturnsContext
 {
 
-    private StructureReference structureReference;
+    private StructureReference type;
     private String             description;
 
     public MutableReturnsContext()
@@ -11,15 +11,15 @@ public class MutableReturnsContext implements ReturnsContext
         this(null, null);
     }
 
-    public MutableReturnsContext(StructureReference structureReference, String description)
+    public MutableReturnsContext(StructureReference type, String description)
     {
-        this.structureReference = structureReference;
+        this.type = type;
         this.description = description;
     }
 
-    public void setStructureReference(StructureReference structureReference)
+    public void setType(StructureReference type)
     {
-        this.structureReference = structureReference;
+        this.type = type;
     }
 
     public void setDescription(String description)
@@ -29,7 +29,7 @@ public class MutableReturnsContext implements ReturnsContext
 
     @Override public StructureReference getType()
     {
-        return structureReference;
+        return type;
     }
 
     @Override public String getDescription()
